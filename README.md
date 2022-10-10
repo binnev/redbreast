@@ -1,10 +1,5 @@
 # Robin's python utilities
 
-## QueryList
-
-Do you want that sweet Django QuerySet filtering, but your objects aren't in a database, and you also don't want to
-write a filter / list comprehension? The QueryList is the object for you!
-
 ### Installation
 
 Install this library with
@@ -12,6 +7,11 @@ Install this library with
 ```
 pip install redbreast
 ```
+
+## QueryList
+
+Do you want that sweet Django QuerySet filtering, but your objects aren't in a database, and you also don't want to
+write a filter / list comprehension? The QueryList is the object for you!
 
 ### Usage
 
