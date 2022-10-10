@@ -86,7 +86,7 @@ def test_get():
     with pytest.raises(MultipleObjectsReturned):
         qs.get(number__gt=0)
 
-    # positional args are not allowd
+    # positional args are not allowed
     with pytest.raises(TypeError):
         qs.get("foo")
 
@@ -267,3 +267,23 @@ def test_querylist_subclass_filter_and_exclude_return_subclass_instance_not_quer
     ql = MyQueryList([dict(foo="bar")])
     assert isinstance(ql.filter(foo="bar"), MyQueryList)
     assert isinstance(ql.exclude(foo="bar"), MyQueryList)
+
+
+def test_querylist_register_operation():
+    class _QueryList(QueryList):
+        """This subclass is only necessary to prevent editing the original QueryList and
+        affecting other tests."""
+
+        operations = QueryList.operations
+
+    _QueryList.register_operation("islongerthan", lambda item, target_len: len(item) > target_len)
+    ql = _QueryList(
+        [
+            dict(name="foo"),
+            dict(name="fooooooooooooooo"),
+        ]
+    )
+
+    assert ql.filter(name__islongerthan=3).first()["name"] == "fooooooooooooooo"
+    assert "islongerthan" in dict(_QueryList.operations)
+    assert "islongerthan" not in dict(QueryList.operations)
