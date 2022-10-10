@@ -1,5 +1,7 @@
 # Robin's python utilities
 
+![](https://github.com/binnev/redbreast/blob/main/logo.png)
+
 ### Installation
 
 ```
