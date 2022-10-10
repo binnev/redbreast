@@ -2,8 +2,6 @@
 
 ### Installation
 
-Install this library with
-
 ```
 pip install redbreast
 ```
