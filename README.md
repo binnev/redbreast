@@ -5,6 +5,14 @@
 Do you want that sweet Django QuerySet filtering, but your objects aren't in a database, and you also don't want to
 write a filter / list comprehension? The QueryList is the object for you!
 
+### Installation
+
+Install this library with
+
+```
+pip install redbreast
+```
+
 ### Usage
 
 Let's do some setup. We want to investigate the following group of dogs:
