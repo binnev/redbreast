@@ -124,3 +124,106 @@ print(dogs)
 #     Dog(name='Buster', owner='Robin', number=71.19),
 # ]
 ```
+
+## Parametrize
+
+This is a thin wrapper around `pytest.mark.parametrize` that provides better oversight of tests with lots of parameters.
+
+Consider the following (totally useless) test:
+
+```python
+@pytest.mark.parametrize(
+    "a, b, c, d, e, f, g, h, i",
+    [
+        (True, 2, "foo", [], (), 69, 7, 8, ...),
+        (False, 2, "bar", [], (), 420, 7, 8, ...),
+        (None, 2, "baz", [], (), 666, 7, 8, ...),
+        (True, 2, "baz", [], (), 9000, 7, 8, ...),
+    ],
+)
+def test_parametrize(a, b, c, d, e, f, g, h, i):
+    assert a in [True, False, None]
+    assert b == 2
+    assert isinstance(c, str)
+    assert isinstance(d, list) and len(d) == 0
+    assert isinstance(e, tuple) and len(e) == 0
+    assert isinstance(f, int)
+    assert g == 7
+    assert h == 8
+    assert i == Ellipsis
+```
+
+It was difficult to write because I couldn't quickly see which parameter name mapped to which value. Let's rewrite the
+test using my parametrize wrapper:
+
+```python
+from redbreast.testing import parametrize, testparams
+
+
+@parametrize(
+    param := testparams("a", "b", "c", "d", "e", "f", "g", "h", "i"),
+    [
+        param(a=True, b=2, c="foo", d=[], e=(), f=69, g=7, h=8, i=...),
+        param(a=False, b=2, c="bar", d=[], e=(), f=420, g=7, h=8, i=...),
+        param(a=None, b=2, c="baz", d=[], e=(), f=666, g=7, h=8, i=...),
+        param(a=True, b=2, c="baz", d=[], e=(), f=9000, g=7, h=8, i=...),
+    ],
+)
+def test_parametrize(param):
+    assert param.a in [True, False, None]
+    assert param.b == 2
+    assert isinstance(param.c, str)
+    assert isinstance(param.d, list) and len(param.d) == 0
+    assert isinstance(param.e, tuple) and len(param.e) == 0
+    assert isinstance(param.f, int)
+    assert param.g == 7
+    assert param.h == 8
+    assert param.i == Ellipsis
+```
+
+Much better. I can see at a glance that `g=7`, for example.
+
+By invoking `param := testparams("a", "b", "c", ...)` we are creating a dataclass on the fly, which accepts
+arguments `"a", "b", "c", ...`, and acts as our container for each test case. All arguments are optional, and default
+to `None` if no value is supplied. Only keyword arguments are allowed, because the whole point is to make the test more
+descriptive. Using positional args -- `param(1, 2, 3, ...)` -- is not allowed.
+
+The dataclass has the default argument `description` to encourage you to describe each test case. The description is
+also passed to pytest so that it shows up nicely in output. By default, pytest tries to generate a description based on
+the items in the list:
+
+```python
+# test_testing.py::test_parametrize[param0] PASSED                         [ 25%]
+# test_testing.py::test_parametrize[param1] PASSED                         [ 50%]
+# test_testing.py::test_parametrize[param2] PASSED                         [ 75%]
+# test_testing.py::test_parametrize[param3] PASSED                         [100%]
+```
+
+If we pass the following descriptions, they will show up in the output instead:
+
+```python
+@parametrize(
+    param := testparams("a", "b", "c", "d", "e", "f", "g", "h", "i"),
+    [
+        param(description="1st test case", ...),
+        param(description="2nd test case", ...),
+        param(description="3rd test case", ...),
+        param(description="4th test case", ...),
+    ],
+)
+def test_parametrize(param):
+    ...
+
+# ============================= test session starts ==============================
+# collecting ... collected 4 items
+# 
+# test_testing.py::test_parametrize[1st test case] PASSED                  [ 25%]
+# test_testing.py::test_parametrize[2nd test case] PASSED                  [ 50%]
+# test_testing.py::test_parametrize[3rd test case] PASSED                  [ 75%]
+# test_testing.py::test_parametrize[4th test case] PASSED                  [100%]
+# 
+# ============================== 4 passed in 0.04s ===============================
+```
+
+Admittedly, our descriptions in this example aren't much more useful than pytest's ones, but you can go into as much
+detail as you want. I sometimes write a small paragraph describing the motivation / context around a test case. 
