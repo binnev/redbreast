@@ -1,6 +1,6 @@
 # Robin's python utilities
 
-<img src="https://github.com/binnev/redbreast/blob/main/logo.png" width="200"/>
+<img src="logo.png"/>
 
 ### Installation
 
