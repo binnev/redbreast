@@ -8,13 +8,23 @@ from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 class QueryList(list):
     """A list that you can filter like a Django QuerySet"""
 
+    # registry of double-underscore method names and the functions they map to
+    operations = (
+        ("lt", operator.lt),
+        ("lte", operator.le),
+        ("gt", operator.gt),
+        ("gte", operator.ge),
+        ("contains", operator.contains),
+        ("in", lambda a, b: a in b),
+    )
+
     def filter(self, **kwargs) -> "QueryList":
         func = lambda item: self._match_item(item, **kwargs)
-        return QueryList(filter(func, self))
+        return self.__class__(filter(func, self))
 
     def exclude(self, **kwargs) -> "QueryList":
         func = lambda item: not self._match_item(item, **kwargs)
-        return QueryList(filter(func, self))
+        return self.__class__(filter(func, self))
 
     def get(self, **kwargs) -> Any:
         qs = self.filter(**kwargs)
@@ -33,21 +43,14 @@ class QueryList(list):
                 return False
         return True
 
-    @staticmethod
-    def map_operation(key: str) -> tuple[str, Callable]:
-        mapping = {
-            "lt": operator.lt,
-            "lte": operator.le,
-            "gt": operator.gt,
-            "gte": operator.ge,
-            "contains": operator.contains,
-            "in": lambda a, b: a in b,
-        }
+    @classmethod
+    def map_operation(cls, key: str) -> tuple[str, Callable]:
         key, *dunder_operation = key.split("__")
         operation = operator.eq
         if dunder_operation:
+            operations = dict(cls.operations)
             try:
-                operation = mapping[dunder_operation[0]]
+                operation = operations[dunder_operation[0]]
             except KeyError:
                 raise ValueError(
                     f"QueryList received unknown filter operation: {key}__{dunder_operation[0]}"

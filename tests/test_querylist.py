@@ -237,3 +237,33 @@ def test_filter_for_nonexistent_attribute_raises_error():
     qs = QueryList([dict(foo="bar")])
     with pytest.raises(KeyError):
         qs.filter(energy=9000)
+
+
+def test_can_subclass_querylist_and_add_dunder_methods():
+    class MyQueryList(QueryList):
+        """QueryList subclass that supports case-insensitive contains and length comparison
+        functions"""
+
+        operations = QueryList.operations + (
+            ("icontains", lambda string, search_term: search_term.lower() in string.lower()),
+            ("islongerthan", lambda item, target_len: len(item) > target_len),
+        )
+
+    ql = MyQueryList(
+        [
+            dict(name="foo"),
+            dict(name="fooooooooooooooo"),
+        ]
+    )
+
+    assert ql.filter(name__islongerthan=3).first()["name"] == "fooooooooooooooo"
+    assert ql.filter(name__icontains="OoOoOo").first()["name"] == "fooooooooooooooo"
+
+
+def test_querylist_subclass_filter_and_exclude_return_subclass_instance_not_querylist():
+    class MyQueryList(QueryList):
+        pass
+
+    ql = MyQueryList([dict(foo="bar")])
+    assert isinstance(ql.filter(foo="bar"), MyQueryList)
+    assert isinstance(ql.exclude(foo="bar"), MyQueryList)
