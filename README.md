@@ -1,6 +1,6 @@
 # Robin's python utilities
 
-![](https://github.com/binnev/redbreast/blob/main/logo.png)
+<img src="https://github.com/binnev/redbreast/blob/main/logo.png" width="200"/>
 
 ### Installation
 
