@@ -59,6 +59,10 @@ dogs.exclude(owner="Sam")
 The `get` method works like in Django -- it has to match exactly one object or it will raise an exception:
 
 ```python
+# one object matches this query
+dogs.get(name="Muttley")
+# Dog(name='Muttley', owner='Robin', number=31.44)
+
 # multiple objects match this query
 dogs.get(owner="Robin")
 # Traceback (most recent call last):
