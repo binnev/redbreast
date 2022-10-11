@@ -1,6 +1,6 @@
 # Robin's python utilities
 
-<img src="logo.png"/>
+<img src="https://github.com/binnev/redbreast/raw/main/logo.png"/>
 
 ### Installation
 
