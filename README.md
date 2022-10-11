@@ -86,6 +86,24 @@ dogs.get(name="Penelope")
 # django.core.exceptions.ObjectDoesNotExist
 ```
 
+Also, it's worth noting that QueryList can handle dictionaries (with `["key_lookup"]`) as well as objects (
+with `.dot_lookup`). There can even be a mix of dictionaries and objects in the QueryList:
+
+```python
+things = QueryList(
+    [
+        {"name": "foo", "number": 69, "owner": "Jane"},  # dict
+        Dog(name="bar", number=420, owner="Johnny"),  # object
+    ]
+)
+
+print(things.get(owner="Jane"))
+# {'name': 'foo', 'number': 69, 'owner': 'Jane'}
+
+print(things.get(owner="Johnny"))
+# Dog(name='bar', owner='Johnny', number=420)
+```
+
 ### Adding query methods
 
 If you want to extend the functionality of QueryList by adding more dunder query methods, you can use
