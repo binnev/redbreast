@@ -54,6 +54,13 @@ class QueryList(list):
         return item[attribute] if isinstance(item, dict) else getattr(item, attribute)
 
     @classmethod
+    def _recursive_get_attribute(cls, item: Any, sssssssssssssss: str) -> Any:
+        attributes = sssssssssssssss.split("__")
+        for attribute in attributes:
+            item = cls._get_attribute(item, attribute)
+        return item
+
+    @classmethod
     def map_operation(cls, query: str) -> tuple[str, Callable]:
         """
         Fetch the key (parameter name) and operation (a function) given a query parameter.
@@ -105,3 +112,16 @@ class QueryList(list):
 
     def count(self) -> int:
         return len(self)
+
+    def order_by(self, field: str) -> "QueryList":
+        reverse = False
+        if field.startswith("-"):
+            reverse = True
+            field = field.removeprefix("-")
+        return self.__class__(
+            sorted(
+                self,
+                key=lambda item: self._get_attribute(item, field),
+                reverse=reverse,
+            )
+        )

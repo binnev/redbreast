@@ -299,3 +299,136 @@ def test_querylist_register_operation():
     assert ql.filter(name__islongerthan=3).first()["name"] == "fooooooooooooooo"
     assert "islongerthan" in dict(_QueryList.operations)
     assert "islongerthan" not in dict(QueryList.operations)
+
+
+@parametrize(
+    param := testparams("order_by", "expected_result"),
+    [
+        param(
+            order_by=["number"],
+            expected_result=[
+                fido,
+                muttley,
+                biko,
+                buster,
+            ],
+        ),
+        param(
+            order_by=["-number"],
+            expected_result=[
+                buster,
+                biko,
+                muttley,
+                fido,
+            ],
+        ),
+        param(
+            order_by=["name"],
+            expected_result=[
+                biko,
+                buster,
+                fido,
+                muttley,
+            ],
+        ),
+        param(
+            order_by=["-name"],
+            expected_result=[
+                muttley,
+                fido,
+                buster,
+                biko,
+            ],
+        ),
+        # param(
+        #     order_by=["owner", "name"],
+        #     expected_result=[
+        #         buster,
+        #         muttley,
+        #         biko,
+        #         fido,
+        #     ],
+        # ),
+        # param(
+        #     order_by=["owner", "number"],
+        #     expected_result=[
+        #         muttley,
+        #         buster,
+        #         fido,
+        #         biko,
+        #     ],
+        # ),
+        # param(
+        #     order_by=["-owner", "number"],
+        #     expected_result=[
+        #         fido,
+        #         biko,
+        #         muttley,
+        #         buster,
+        #     ],
+        # ),
+        # param(
+        #     order_by=["-owner", "-number"],
+        #     expected_result=[
+        #         biko,
+        #         fido,
+        #         buster,
+        #         muttley,
+        #     ],
+        # ),
+        # param(
+        #     order_by=["-owner", "-name"],
+        #     expected_result=[
+        #         fido,
+        #         biko,
+        #         muttley,
+        #         buster,
+        #     ],
+        # ),
+    ],
+)
+def test_order_by(param):
+    """
+    fido = Dog(number=15.72, name="Fido", owner="Sam")
+    muttley = Dog(number=31.44, name="Muttley", owner="Robin")
+    biko = Dog(number=47.17, name="Biko", owner="Sam")
+    buster = Dog(number=71.19, name="Buster", owner="Robin")
+    """
+    dogs = _default()
+    results = dogs.order_by(*param.order_by)
+    assert results == param.expected_result
+    assert isinstance(results, list)  # order_by should "cash in" the QL
+
+
+@pytest.mark.parametrize(
+    "attribute_string, expected_result",
+    [
+        ("owner", "owner"),
+        ("friend__name", "Friend"),
+        ("friend__owner", "Someone else"),
+        ("friend__friend__name", "FOAF"),
+    ],
+)
+def test__recursive_get_attribute(attribute_string, expected_result):
+    doggie = Dog(name="doggie", owner="owner", number=69)
+    doggie.friend = Dog(name="Friend", owner="Someone else", number=420)
+    doggie.friend.friend = Dog(name="FOAF", owner="Billy", number=666)
+    assert QueryList._recursive_get_attribute(doggie, attribute_string) == expected_result
+
+    # and with dicts -- requires some different setup
+    doggie = dict(name="doggie", owner="owner", number=69)
+    doggie["friend"] = dict(name="Friend", owner="Someone else", number=420)
+    doggie["friend"]["friend"] = dict(name="FOAF", owner="Billy", number=666)
+    assert QueryList._recursive_get_attribute(doggie, attribute_string) == expected_result
+
+
+def test__recursive_get_attribute_fail():
+    doggie = Dog(name="doggie", owner="owner", number=69)
+    doggie.friend = Dog(name="Friend", owner="Someone else", number=420)
+    with pytest.raises(AttributeError):
+        QueryList._recursive_get_attribute(doggie, "friend__foo")
+
+    doggie = dict(name="doggie", owner="owner", number=69)
+    doggie["friend"] = dict(name="Friend", owner="Someone else", number=420)
+    with pytest.raises(KeyError):
+        QueryList._recursive_get_attribute(doggie, "friend__foo")
