@@ -158,6 +158,8 @@ def test__match_item(param):
         (dict(name__in=["foo"]), False),
         (dict(name__in=["foo", "Fido"]), True),
         (dict(name__in="Fido"), True),
+        (dict(name__len=4), True),
+        (dict(name__len=69), False),
     ],
 )
 def test_dunder_operators(filter_kwargs, expected_match):
@@ -388,12 +390,6 @@ def test_querylist_register_operation():
     ],
 )
 def test_order_by(param):
-    """
-    fido = Dog(number=15.72, name="Fido", owner="Sam")
-    muttley = Dog(number=31.44, name="Muttley", owner="Robin")
-    biko = Dog(number=47.17, name="Biko", owner="Sam")
-    buster = Dog(number=71.19, name="Buster", owner="Robin")
-    """
     dogs = _default()
     results = dogs.order_by(*param.order_by)
     assert results == param.expected_result

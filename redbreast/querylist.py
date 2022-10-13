@@ -16,6 +16,7 @@ class QueryList(list):
         ("gte", operator.ge),
         ("contains", operator.contains),
         ("in", lambda a, b: a in b),
+        ("len", lambda a, b: len(a) == b),
     )
 
     def filter(self, **kwargs) -> "QueryList":
