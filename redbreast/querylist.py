@@ -19,6 +19,12 @@ class QueryList(list):
         ("len", lambda a, b: len(a) == b),
     )
 
+    # functions (mostly builtins) that can get some value of an item.
+    attribute_getters = (
+        ("len", len),
+        ("bool", bool),
+    )
+
     def all(self) -> list:
         return list(deepcopy(self))
 
@@ -137,13 +143,15 @@ class QueryList(list):
         class' operations registry.
         E.g. if query="name__contains" -> key="name", operation=operator.contains
         """
-        key, *dunder_operation = query.split("__", maxsplit=1)
-        if dunder_operation:
+        # defaults
+        operation = operator.eq
+        key = query
+
+        parts = query.rsplit("__", maxsplit=1)
+        if len(parts) > 1:
+            first_parts, dunder_operation = parts
             operations = dict(cls.operations)
-            try:
-                operation = operations[dunder_operation[0]]
-            except KeyError:
-                raise ValueError(f"QueryList received unknown filter operation: {query}")
-        else:
-            operation = operator.eq
+            if dunder_operation in operations:
+                operation = operations[dunder_operation]
+                key = first_parts
         return key, operation

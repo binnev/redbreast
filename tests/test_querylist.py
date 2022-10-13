@@ -42,6 +42,8 @@ def test_empty_behaviour():
         ("distance__lte", "distance", operator.le),
         ("distance__gt", "distance", operator.gt),
         ("distance__gte", "distance", operator.ge),
+        ("distance__meters", "distance__meters", operator.eq),
+        ("distance__meters__gte", "distance__meters", operator.ge),
     ],
 )
 def test__map_operation(input_key, expected_key, expected_operation):
@@ -93,10 +95,10 @@ def test_get():
 
 def test_unknown_dunder_operation_raises_exception():
     ql = _default()
-    with pytest.raises(ValueError) as e:
+    with pytest.raises(AttributeError) as e:
         ql.filter(name__inside=["foo", "bar"])
 
-    assert str(e.value) == "QueryList received unknown filter operation: name__inside"
+    assert str(e.value) == "'Dog' object has no attribute 'name__inside'"
 
 
 @parametrize(
