@@ -113,8 +113,14 @@ class QueryList(list):
     def count(self) -> int:
         return len(self)
 
-    def order_by(self, *fields: str) -> "QueryList":
+    def order_by(self, *fields: str) -> list:
         class comparer:
+            """
+            Thin wrapper around an item that allows us to reverse the sorting on a per-field
+            basis. Credit to black panda:
+            https://stackoverflow.com/questions/37693373/how-to-sort-a-list-with-two-keys-but-one-in-reverse-order
+            """
+
             def __init__(self, value: Any, reverse: bool):
                 self.value = value
                 self.reverse = reverse
@@ -129,14 +135,14 @@ class QueryList(list):
                     return self.value < other.value
 
         def comparison_func(item):
-            output = []
-            for field in fields:
-                reverse = False
-                if field.startswith("-"):
-                    reverse = True
-                    field = field.removeprefix("-")
+            """Returns a tuple of attributes of the item which `sorted` will use to compare it
+            against its peers"""
+            return tuple(
+                comparer(
+                    self._get_attribute(item, field.lstrip("-")),
+                    reverse=field.startswith("-"),
+                )
+                for field in fields
+            )
 
-                output.append(comparer(self._get_attribute(item, field), reverse))
-            return tuple(output)
-
-        return self.__class__(sorted(self, key=comparison_func))
+        return sorted(self, key=comparison_func)

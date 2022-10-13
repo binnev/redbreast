@@ -397,7 +397,7 @@ def test_order_by(param):
     dogs = _default()
     results = dogs.order_by(*param.order_by)
     assert results == param.expected_result
-    assert isinstance(results, list)  # order_by should "cash in" the QL
+    assert isinstance(results, list) and not isinstance(results, QueryList)
 
 
 @pytest.mark.parametrize(
