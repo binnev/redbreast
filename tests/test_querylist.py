@@ -340,51 +340,51 @@ def test_querylist_register_operation():
                 biko,
             ],
         ),
-        # param(
-        #     order_by=["owner", "name"],
-        #     expected_result=[
-        #         buster,
-        #         muttley,
-        #         biko,
-        #         fido,
-        #     ],
-        # ),
-        # param(
-        #     order_by=["owner", "number"],
-        #     expected_result=[
-        #         muttley,
-        #         buster,
-        #         fido,
-        #         biko,
-        #     ],
-        # ),
-        # param(
-        #     order_by=["-owner", "number"],
-        #     expected_result=[
-        #         fido,
-        #         biko,
-        #         muttley,
-        #         buster,
-        #     ],
-        # ),
-        # param(
-        #     order_by=["-owner", "-number"],
-        #     expected_result=[
-        #         biko,
-        #         fido,
-        #         buster,
-        #         muttley,
-        #     ],
-        # ),
-        # param(
-        #     order_by=["-owner", "-name"],
-        #     expected_result=[
-        #         fido,
-        #         biko,
-        #         muttley,
-        #         buster,
-        #     ],
-        # ),
+        param(
+            order_by=["owner", "name"],
+            expected_result=[
+                buster,
+                muttley,
+                biko,
+                fido,
+            ],
+        ),
+        param(
+            order_by=["owner", "number"],
+            expected_result=[
+                muttley,
+                buster,
+                fido,
+                biko,
+            ],
+        ),
+        param(
+            order_by=["-owner", "number"],
+            expected_result=[
+                fido,
+                biko,
+                muttley,
+                buster,
+            ],
+        ),
+        param(
+            order_by=["-owner", "-number"],
+            expected_result=[
+                biko,
+                fido,
+                buster,
+                muttley,
+            ],
+        ),
+        param(
+            order_by=["-owner", "-name"],
+            expected_result=[
+                fido,
+                biko,
+                muttley,
+                buster,
+            ],
+        ),
     ],
 )
 def test_order_by(param):

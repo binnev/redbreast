@@ -113,15 +113,30 @@ class QueryList(list):
     def count(self) -> int:
         return len(self)
 
-    def order_by(self, field: str) -> "QueryList":
-        reverse = False
-        if field.startswith("-"):
-            reverse = True
-            field = field.removeprefix("-")
-        return self.__class__(
-            sorted(
-                self,
-                key=lambda item: self._get_attribute(item, field),
-                reverse=reverse,
-            )
-        )
+    def order_by(self, *fields: tuple[str]) -> "QueryList":
+        class comparer:
+            def __init__(self, value: Any, reverse: bool):
+                self.value = value
+                self.reverse = reverse
+
+            def __eq__(self, other):
+                return other.value == self.value
+
+            def __lt__(self, other):
+                if self.reverse:
+                    return other.value < self.value
+                else:
+                    return self.value < other.value
+
+        def comparison_func(item):
+            output = []
+            for field in fields:
+                reverse = False
+                if field.startswith("-"):
+                    reverse = True
+                    field = field.removeprefix("-")
+
+                output.append(comparer(self._get_attribute(item, field), reverse))
+            return tuple(output)
+
+        return self.__class__(sorted(self, key=comparison_func))
