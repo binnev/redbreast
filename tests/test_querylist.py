@@ -44,8 +44,8 @@ def test_empty_behaviour():
         ("distance__gte", "distance", operator.ge),
     ],
 )
-def test_map_operation(input_key, expected_key, expected_operation):
-    key, operation = QueryList.map_operation(input_key)
+def test__map_operation(input_key, expected_key, expected_operation):
+    key, operation = QueryList._map_operation(input_key)
     assert key == expected_key
     assert operation == expected_operation
 
