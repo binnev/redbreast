@@ -147,9 +147,8 @@ class QueryList(list):
         operation = operator.eq
         key = query
 
-        parts = query.rsplit("__", maxsplit=1)
-        if len(parts) > 1:
-            first_parts, dunder_operation = parts
+        if "__" in query:
+            first_parts, dunder_operation = query.rsplit("__", maxsplit=1)
             operations = dict(cls.operations)
             if dunder_operation in operations:
                 operation = operations[dunder_operation]
