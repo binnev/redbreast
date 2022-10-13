@@ -18,7 +18,7 @@ class Dog:
 fido = Dog(number=15.72, name="Fido", owner="Sam")
 muttley = Dog(number=31.44, name="Muttley", owner="Robin")
 biko = Dog(number=47.17, name="Biko", owner="Sam")
-buster = dict(number=71.19, name="Buster", owner="Robin")
+buster = Dog(number=71.19, name="Buster", owner="Robin")
 
 
 def _default():
@@ -237,6 +237,18 @@ def test_filter_for_nonexistent_attribute_raises_error():
     qs = QueryList([dict(foo="bar")])
     with pytest.raises(KeyError):
         qs.filter(energy=9000)
+
+
+def test_filter_works_on_dicts_too():
+    dogs = QueryList(
+        [
+            dict(number=15.72, name="Fido", owner="Sam"),
+            dict(number=31.44, name="Muttley", owner="Robin"),
+            dict(number=47.17, name="Biko", owner="Sam"),
+            dict(number=71.19, name="Buster", owner="Robin"),
+        ]
+    )
+    assert dogs.filter(name="Muttley") == [dict(number=31.44, name="Muttley", owner="Robin")]
 
 
 def test_can_subclass_querylist_and_add_dunder_methods():

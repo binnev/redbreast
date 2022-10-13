@@ -35,18 +35,23 @@ class QueryList(list):
         return self.filter(**kwargs)[0]
 
     @classmethod
-    def _match_item(cls, item: Any, **kwargs) -> bool:
+    def _match_item(cls, item: Any, **search_terms) -> bool:
         """
-        The kwargs are the search terms given to filter/exclude/get.
+        The search_terms are the search terms given to filter/exclude/get.
         The item is one of the items in the QueryList.
         This function decides whether the item matches the search terms.
         """
-        for query, value in kwargs.items():
+        for query, value in search_terms.items():
             key, operation = cls.map_operation(query)
-            attribute = item[key] if isinstance(item, dict) else getattr(item, key)
+            attribute = cls._get_attribute(item, key)
             if not operation(attribute, value):
                 return False
         return True
+
+    @classmethod
+    def _get_attribute(cls, item: Any, attribute: str) -> Any:
+        """Get the value off an item with either ["dict key lookup"] or .dot_lookup"""
+        return item[attribute] if isinstance(item, dict) else getattr(item, attribute)
 
     @classmethod
     def map_operation(cls, query: str) -> tuple[str, Callable]:
