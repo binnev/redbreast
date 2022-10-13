@@ -113,7 +113,7 @@ class QueryList(list):
     def count(self) -> int:
         return len(self)
 
-    def order_by(self, *fields: tuple[str]) -> "QueryList":
+    def order_by(self, *fields: str) -> "QueryList":
         class comparer:
             def __init__(self, value: Any, reverse: bool):
                 self.value = value
