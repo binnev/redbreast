@@ -37,7 +37,7 @@ buster = Dog(number=71.19, name="Buster", owner="Robin")
 dogs = QueryList([fido, muttley, biko, buster])
 ```
 
-#### `filter`
+#### filter
 
 We can `filter` for strict equality:
 
@@ -85,7 +85,7 @@ dogs.get(friend__owner__len__gt=5)
 # Dog(name='doggie', owner='owner', number=69)
 ```
 
-#### `exclude`
+#### exclude
 
 `exclude` works too:
 
@@ -97,7 +97,7 @@ dogs.exclude(owner="Sam")
 # ]
 ```
 
-#### `get`
+#### get
 
 The `get` method works like in Django -- it has to match exactly one object or it will raise an exception:
 
@@ -139,7 +139,7 @@ print(things.get(owner="Johnny"))
 # Dog(name='bar', owner='Johnny', number=420)
 ```
 
-#### `order_by`
+#### order_by
 
 `order_by` accepts one or more field names. Prepending a `"-"` to the field name will reverse the ordering for that field,
 just like in Django.
