@@ -168,6 +168,41 @@ def test_dunder_operators(filter_kwargs, expected_match):
     assert QueryList._match_item(fido, **filter_kwargs) == expected_match
 
 
+@pytest.mark.parametrize(
+    "query, expected_value",
+    [
+        ("empty__len", 0),
+        ("fibonacci__len", 5),
+        ("empty__bool", False),
+        ("zero__bool", False),
+        ("positive__bool", True),
+        ("naturals__bool", True),
+        ("naturals__max", 4),
+        ("naturals__min", 0),
+        ("empty__all", True),  # python bug imo
+        ("naturals__all", False),
+        ("fibonacci__all", True),
+        ("empty__any", False),
+        ("naturals__any", True),
+        ("negative__abs", 69),
+        ("positive__abs", 420),
+        ("zero__abs", 0),
+        ("fibonacci__sum", 19),
+        ("empty__sum", 0),
+    ],
+)
+def test_attribute_getters(query, expected_value):
+    item = dict(
+        fibonacci=(1, 2, 3, 5, 8),
+        naturals=(0, 1, 2, 3, 4),
+        negative=-69,
+        positive=420,
+        zero=0,
+        empty=[],
+    )
+    assert QueryList._recursive_get_attribute(item, query) == expected_value
+
+
 @parametrize(
     param := testparams("apply_filter", "expected_result"),
     [
