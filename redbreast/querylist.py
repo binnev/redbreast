@@ -16,7 +16,35 @@ class QueryList(list):
         ("gte", operator.ge),
         ("contains", operator.contains),
         ("in", lambda a, b: a in b),
+        ("len", lambda a, b: len(a) == b),
     )
+
+    # functions (mostly builtins) that can get some value of an item.
+    attribute_getters = (
+        ("len", len),
+        ("bool", bool),
+        ("max", max),
+        ("min", min),
+        ("all", all),
+        ("any", any),
+        ("abs", abs),
+        ("sum", sum),
+    )
+
+    def all(self) -> list:
+        return list(deepcopy(self))
+
+    def exists(self) -> bool:
+        return bool(self)
+
+    def first(self) -> Any:
+        return self[0] if self.exists() else None
+
+    def last(self) -> Any:
+        return self[-1] if self.exists() else None
+
+    def count(self) -> int:
+        return len(self)
 
     def filter(self, **kwargs) -> "QueryList":
         func = lambda item: self._match_item(item, **kwargs)
@@ -34,42 +62,39 @@ class QueryList(list):
             raise MultipleObjectsReturned
         return self.filter(**kwargs)[0]
 
-    @classmethod
-    def _match_item(cls, item: Any, **kwargs) -> bool:
-        """
-        The kwargs are the search terms given to filter/exclude/get.
-        The item is one of the items in the QueryList.
-        This function decides whether the item matches the search terms.
-        """
-        for query, value in kwargs.items():
-            key, operation = cls.map_operation(query)
-            attribute = item[key] if isinstance(item, dict) else getattr(item, key)
-            if not operation(attribute, value):
-                return False
-        return True
+    def order_by(self, *fields: str) -> list:
+        class comparer:
+            """
+            Thin wrapper around an item that allows us to reverse the sorting on a per-field
+            basis. Credit to black panda:
+            https://stackoverflow.com/questions/37693373/how-to-sort-a-list-with-two-keys-but-one-in-reverse-order
+            """
 
-    @classmethod
-    def map_operation(cls, query: str) -> tuple[str, Callable]:
-        """
-        Fetch the key (parameter name) and operation (a function) given a query parameter.
+            def __init__(self, value: Any, reverse: bool):
+                self.value = value
+                self.reverse = reverse
 
-        The default operator is equality (=)
-        E.g. if query="name" -> key="name", operator=operator.eq
+            def __eq__(self, other):
+                return other.value == self.value
 
-        If the query contains dunders (__) we attempt to fetch the relevant operation from the
-        class' operations registry.
-        E.g. if query="name__contains" -> key="name", operation=operator.contains
-        """
-        key, *dunder_operation = query.split("__", maxsplit=1)
-        if dunder_operation:
-            operations = dict(cls.operations)
-            try:
-                operation = operations[dunder_operation[0]]
-            except KeyError:
-                raise ValueError(f"QueryList received unknown filter operation: {query}")
-        else:
-            operation = operator.eq
-        return key, operation
+            def __lt__(self, other):
+                if self.reverse:
+                    return other.value < self.value
+                else:
+                    return self.value < other.value
+
+        def comparison_func(item):
+            """Returns a tuple of attributes of the item which `sorted` will use to compare it
+            against its peers"""
+            return tuple(
+                comparer(
+                    self._recursive_get_attribute(item, field.lstrip("-")),
+                    reverse=field.startswith("-"),
+                )
+                for field in fields
+            )
+
+        return sorted(self, key=comparison_func)
 
     @classmethod
     def register_operation(cls, name: str, function: Callable):
@@ -86,17 +111,60 @@ class QueryList(list):
         """
         cls.operations += ((name, function),)
 
-    def all(self) -> list:
-        return list(deepcopy(self))
+    @classmethod
+    def register_attribute_getter(cls, name: str, function: Callable):
+        cls.attribute_getters += ((name, function),)
 
-    def exists(self) -> bool:
-        return bool(self)
+    @classmethod
+    def _match_item(cls, item: Any, **search_terms) -> bool:
+        """
+        The search_terms are the search terms given to filter/exclude/get.
+        The item is one of the items in the QueryList.
+        This function decides whether the item matches the search terms.
+        """
+        for query, value in search_terms.items():
+            key, operation = cls._map_operation(query)
+            attribute = cls._recursive_get_attribute(item, key)
+            if not operation(attribute, value):
+                return False
+        return True
 
-    def first(self) -> Any:
-        return self[0] if self.exists() else None
+    @classmethod
+    def _get_attribute(cls, item: Any, attribute: str) -> Any:
+        """Get the value off an item with either ["dict key lookup"] or .dot_lookup"""
+        return item[attribute] if isinstance(item, dict) else getattr(item, attribute)
 
-    def last(self) -> Any:
-        return self[-1] if self.exists() else None
+    @classmethod
+    def _recursive_get_attribute(cls, item: Any, query: str) -> Any:
+        attributes = query.split("__")
+        for attribute in attributes:
+            if attribute in dict(cls.attribute_getters):
+                func = dict(cls.attribute_getters)[attribute]
+                item = func(item)
+            else:
+                item = cls._get_attribute(item, attribute)
+        return item
 
-    def count(self) -> int:
-        return len(self)
+    @classmethod
+    def _map_operation(cls, query: str) -> tuple[str, Callable]:
+        """
+        Fetch the key (parameter name) and operation (a function) given a query parameter.
+
+        The default operator is equality (=)
+        E.g. if query="name" -> key="name", operator=operator.eq
+
+        If the query contains dunders (__) we attempt to fetch the relevant operation from the
+        class' operations registry.
+        E.g. if query="name__contains" -> key="name", operation=operator.contains
+        """
+        # defaults
+        operation = operator.eq
+        key = query
+
+        if "__" in query:
+            first_parts, dunder_operation = query.rsplit("__", maxsplit=1)
+            operations = dict(cls.operations)
+            if dunder_operation in operations:
+                operation = operations[dunder_operation]
+                key = first_parts
+        return key, operation

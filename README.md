@@ -37,6 +37,8 @@ buster = Dog(number=71.19, name="Buster", owner="Robin")
 dogs = QueryList([fido, muttley, biko, buster])
 ```
 
+#### `filter`
+
 We can `filter` for strict equality:
 
 ```python
@@ -54,6 +56,37 @@ dogs.filter(number__gt=30, number__lt=70)
 # ]
 ```
 
+Some python builtins are supported too:
+
+```python
+dogs.filter(name__len=4)
+# [
+#     Dog(name="Fido", owner="Sam", number=15.72), 
+#     Dog(name="Biko", owner="Sam", number=47.17),
+# ]
+
+dogs.filter(name__len__gt=4)
+# [
+#     Dog(name='Muttley', owner='Robin', number=31.44), 
+#     Dog(name='Buster', owner='Robin', number=71.19),
+# ]
+```
+
+You can chain multiple `__`s to access related objects and their attributes:
+
+```python
+doggie = Dog(name="doggie", owner="owner", number=69)
+friend = Dog(name="Friend", owner="Someone else", number=420)
+doggie.friend = friend
+friend.friend = doggie
+dogs = QueryList([doggie, friend])
+
+dogs.get(friend__owner__len__gt=5)
+# Dog(name='doggie', owner='owner', number=69)
+```
+
+#### `exclude`
+
 `exclude` works too:
 
 ```python
@@ -63,6 +96,8 @@ dogs.exclude(owner="Sam")
 #     Dog(name='Buster', owner='Robin', number=71.19),
 # ]
 ```
+
+#### `get`
 
 The `get` method works like in Django -- it has to match exactly one object or it will raise an exception:
 
@@ -102,6 +137,34 @@ print(things.get(owner="Jane"))
 
 print(things.get(owner="Johnny"))
 # Dog(name='bar', owner='Johnny', number=420)
+```
+
+#### `order_by`
+
+`order_by` accepts one or more field names. Prepending a `"-"` to the field name will reverse the ordering for that field,
+just like in Django.
+
+```python
+result = dogs.order_by("-owner", "number")
+# [
+#     Dog(name='Fido', owner='Sam', number=15.72), 
+#     Dog(name='Biko', owner='Sam', number=47.17), 
+#     Dog(name='Muttley', owner='Robin', number=31.44), 
+#     Dog(name='Buster', owner='Robin', number=71.19),
+# ]
+```
+
+Attribute getters and related object lookups can be included in the field name just like with `filter` calls:
+
+```python
+result = dogs.order_by("-name__len")
+# [
+#     Dog(name='Muttley', owner='Robin', number=31.44), 
+#     Dog(name='Buster', owner='Robin', number=71.19),
+#     Dog(name='Fido', owner='Sam', number=15.72), 
+#     Dog(name='Biko', owner='Sam', number=47.17), 
+# ]
+
 ```
 
 ### Adding query methods
