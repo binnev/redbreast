@@ -23,6 +23,11 @@ class QueryList(list):
     attribute_getters = (
         ("len", len),
         ("bool", bool),
+        ("max", max),
+        ("min", min),
+        ("all", all),
+        ("any", any),
+        ("abs", abs),
     )
 
     def all(self) -> list:
@@ -82,7 +87,7 @@ class QueryList(list):
             against its peers"""
             return tuple(
                 comparer(
-                    self._get_attribute(item, field.lstrip("-")),
+                    self._recursive_get_attribute(item, field.lstrip("-")),
                     reverse=field.startswith("-"),
                 )
                 for field in fields
@@ -114,7 +119,7 @@ class QueryList(list):
         """
         for query, value in search_terms.items():
             key, operation = cls._map_operation(query)
-            attribute = cls._get_attribute(item, key)
+            attribute = cls._recursive_get_attribute(item, key)
             if not operation(attribute, value):
                 return False
         return True
@@ -125,10 +130,14 @@ class QueryList(list):
         return item[attribute] if isinstance(item, dict) else getattr(item, attribute)
 
     @classmethod
-    def _recursive_get_attribute(cls, item: Any, sssssssssssssss: str) -> Any:
-        attributes = sssssssssssssss.split("__")
+    def _recursive_get_attribute(cls, item: Any, query: str) -> Any:
+        attributes = query.split("__")
         for attribute in attributes:
-            item = cls._get_attribute(item, attribute)
+            if attribute in dict(cls.attribute_getters):
+                func = dict(cls.attribute_getters)[attribute]
+                item = func(item)
+            else:
+                item = cls._get_attribute(item, attribute)
         return item
 
     @classmethod

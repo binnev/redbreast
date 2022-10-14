@@ -98,7 +98,7 @@ def test_unknown_dunder_operation_raises_exception():
     with pytest.raises(AttributeError) as e:
         ql.filter(name__inside=["foo", "bar"])
 
-    assert str(e.value) == "'Dog' object has no attribute 'name__inside'"
+    assert str(e.value) == "'str' object has no attribute 'inside'"
 
 
 @parametrize(
@@ -223,6 +223,21 @@ def test_dunder_operators(filter_kwargs, expected_match):
             apply_filter=lambda qs: qs.filter(number__gt=20, number__lte=60),
             expected_result=[muttley, biko],
         ),
+        param(
+            description="attribute getter in query",
+            apply_filter=lambda qs: qs.filter(name__len=4),
+            expected_result=[fido, biko],
+        ),
+        param(
+            description="attribute getter and dunder operation in query",
+            apply_filter=lambda qs: qs.filter(name__len__lte=6),
+            expected_result=[fido, biko, buster],
+        ),
+        param(
+            description="attribute getter and dunder operation in query; also a normal field",
+            apply_filter=lambda qs: qs.filter(name__len__lte=6, owner="Robin"),
+            expected_result=[buster],
+        ),
     ],
 )
 def test_filter_and_exclude(param):
@@ -309,6 +324,7 @@ def test_querylist_register_operation():
     param := testparams("order_by", "expected_result"),
     [
         param(
+            description="single numeric field",
             order_by=["number"],
             expected_result=[
                 fido,
@@ -318,6 +334,7 @@ def test_querylist_register_operation():
             ],
         ),
         param(
+            description="single numeric field reversed",
             order_by=["-number"],
             expected_result=[
                 buster,
@@ -327,6 +344,7 @@ def test_querylist_register_operation():
             ],
         ),
         param(
+            description="single str field",
             order_by=["name"],
             expected_result=[
                 biko,
@@ -336,6 +354,7 @@ def test_querylist_register_operation():
             ],
         ),
         param(
+            description="single str field reversed",
             order_by=["-name"],
             expected_result=[
                 muttley,
@@ -345,6 +364,7 @@ def test_querylist_register_operation():
             ],
         ),
         param(
+            description="multiple str fields",
             order_by=["owner", "name"],
             expected_result=[
                 buster,
@@ -354,6 +374,7 @@ def test_querylist_register_operation():
             ],
         ),
         param(
+            description="multiple str and numeric fields",
             order_by=["owner", "number"],
             expected_result=[
                 muttley,
@@ -363,6 +384,7 @@ def test_querylist_register_operation():
             ],
         ),
         param(
+            description="multiple str and numeric fields, one reversed",
             order_by=["-owner", "number"],
             expected_result=[
                 fido,
@@ -372,6 +394,7 @@ def test_querylist_register_operation():
             ],
         ),
         param(
+            description="multiple str and numeric fields, both reversed",
             order_by=["-owner", "-number"],
             expected_result=[
                 biko,
@@ -381,12 +404,43 @@ def test_querylist_register_operation():
             ],
         ),
         param(
+            description="multiple str fields, both reversed",
             order_by=["-owner", "-name"],
             expected_result=[
                 fido,
                 biko,
                 muttley,
                 buster,
+            ],
+        ),
+        param(
+            description="single field with attribute getter behind '__'",
+            order_by=["name__len"],
+            expected_result=[
+                fido,
+                biko,
+                buster,
+                muttley,
+            ],
+        ),
+        param(
+            description="single field with attribute getter behind '__', reversed",
+            order_by=["-name__len"],
+            expected_result=[
+                muttley,
+                buster,
+                fido,
+                biko,
+            ],
+        ),
+        param(
+            description="multiple fields, one with attribute getter behind '__', one reversed",
+            order_by=["-name__len", "-number"],
+            expected_result=[
+                muttley,
+                buster,
+                biko,
+                fido,
             ],
         ),
     ],
@@ -405,6 +459,10 @@ def test_order_by(param):
         ("friend__name", "Friend"),
         ("friend__owner", "Someone else"),
         ("friend__friend__name", "FOAF"),
+        ("friend__friend__name__len", 4),
+        ("friend__friend__name__bool", True),
+        ("friend__friend__name__max", "O"),
+        ("friend__friend__name__min", "A"),
     ],
 )
 def test__recursive_get_attribute(attribute_string, expected_result):
