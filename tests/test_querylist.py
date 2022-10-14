@@ -291,7 +291,7 @@ def test_can_subclass_querylist_and_add_dunder_methods():
     assert ql.filter(name__icontains="OoOoOo").first()["name"] == "fooooooooooooooo"
 
 
-def test_querylist_subclass_filter_and_exclude_return_subclass_instance_not_querylist():
+def test_subclass_filter_and_exclude_return_subclass_instance_not_querylist():
     class MyQueryList(QueryList):
         pass
 
@@ -300,7 +300,7 @@ def test_querylist_subclass_filter_and_exclude_return_subclass_instance_not_quer
     assert isinstance(ql.exclude(foo="bar"), MyQueryList)
 
 
-def test_querylist_register_operation():
+def test_register_operation_and_attribute_getter():
     class _QueryList(QueryList):
         """This subclass is only necessary to prevent editing the original QueryList and
         affecting other tests."""
@@ -318,6 +318,20 @@ def test_querylist_register_operation():
     assert ql.filter(name__islongerthan=3).first()["name"] == "fooooooooooooooo"
     assert "islongerthan" in dict(_QueryList.operations)
     assert "islongerthan" not in dict(QueryList.operations)
+
+    _QueryList.register_attribute_getter("num_fs", lambda item: item.count("f"))
+    ql = _QueryList(
+        [
+            dict(name="fff"),
+            dict(name="ffffffffff"),
+        ]
+    )
+
+    assert ql.filter(name__num_fs=3).first()["name"] == "fff"
+    assert ql.filter(name__num_fs=10).first()["name"] == "ffffffffff"
+    assert ql.filter(name__num_fs__gt=5).first()["name"] == "ffffffffff"
+    assert "num_fs" in dict(_QueryList.attribute_getters)
+    assert "num_fs" not in dict(QueryList.attribute_getters)
 
 
 @parametrize(

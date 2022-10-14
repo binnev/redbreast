@@ -28,6 +28,7 @@ class QueryList(list):
         ("all", all),
         ("any", any),
         ("abs", abs),
+        ("sum", sum),
     )
 
     def all(self) -> list:
@@ -109,6 +110,10 @@ class QueryList(list):
         QuerySet.register("islongerthan", is_longer_than)
         """
         cls.operations += ((name, function),)
+
+    @classmethod
+    def register_attribute_getter(cls, name: str, function: Callable):
+        cls.attribute_getters += ((name, function),)
 
     @classmethod
     def _match_item(cls, item: Any, **search_terms) -> bool:
