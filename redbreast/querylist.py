@@ -60,7 +60,7 @@ class QueryList(list):
             raise ObjectDoesNotExist
         if len(qs) > 1:
             raise MultipleObjectsReturned
-        return self.filter(**kwargs)[0]
+        return qs[0]
 
     def order_by(self, *fields: str) -> list:
         class comparer:
