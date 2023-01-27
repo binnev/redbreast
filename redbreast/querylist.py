@@ -62,7 +62,7 @@ class QueryList(list):
             raise MultipleObjectsReturned
         return qs[0]
 
-    def order_by(self, *fields: str) -> list:
+    def order_by(self, *fields: str) -> "QueryList":
         class comparer:
             """
             Thin wrapper around an item that allows us to reverse the sorting on a per-field
