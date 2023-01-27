@@ -498,7 +498,7 @@ def test_order_by(param):
     dogs = _default()
     results = dogs.order_by(*param.order_by)
     assert results == param.expected_result
-    assert isinstance(results, list) and not isinstance(results, QueryList)
+    assert isinstance(results, QueryList)
 
 
 @pytest.mark.parametrize(

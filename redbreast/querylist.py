@@ -94,7 +94,7 @@ class QueryList(list):
                 for field in fields
             )
 
-        return sorted(self, key=comparison_func)
+        return self.__class__(sorted(self, key=comparison_func))
 
     @classmethod
     def register_operation(cls, name: str, function: Callable):
