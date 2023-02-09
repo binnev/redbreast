@@ -1,7 +1,5 @@
 import pytest
 
-
-pytestmark = pytest.mark.django_db
 from redbreast.testing import parametrize, testparams, assert_dicts_equal, set_difference
 
 
