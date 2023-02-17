@@ -537,3 +537,7 @@ def test__recursive_get_attribute_fail():
     doggie["friend"] = dict(name="Friend", owner="Someone else", number=420)
     with pytest.raises(KeyError):
         QueryList._recursive_get_attribute(doggie, "friend__foo")
+
+
+def test_sad():
+    raise Exception("sad")
