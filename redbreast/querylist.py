@@ -62,16 +62,6 @@ class QueryList(list):
             raise MultipleObjectsReturned
         return qs[0]
 
-
-
-
-
-
-
-
-
-
-
     def order_by(self, *fields: str) -> "QueryList":
         class comparer:
             """
