@@ -12,5 +12,4 @@ def cleanup():
 cleanup()
 subprocess.run("python -m build".split())
 subprocess.run("twine upload dist/*".split())
-print("HI")
 cleanup()
