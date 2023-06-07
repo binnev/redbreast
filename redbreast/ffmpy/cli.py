@@ -1,8 +1,25 @@
+from contextlib import contextmanager
+
 import typer
 
 from . import api
 
 app = typer.Typer()
+
+
+@contextmanager
+def _handle_errors():
+    try:
+        yield  # allow code inside the "with" statement to run
+    except Exception as e:
+        match e:
+            case FileNotFoundError():
+                typer.secho(f"File not found: {e}", fg=typer.colors.RED)
+            case api.FfmpegError():
+                typer.secho(f"ffmpeg gave an error: {e}", fg=typer.colors.RED)
+            case _:
+                typer.secho(f"{e.__class__.__name__}: {e}", fg=typer.colors.RED)
+        raise typer.Exit(1)
 
 
 @app.command(help="Create a timelapse (sped up) video from a very long normal-speed video.")
@@ -32,16 +49,30 @@ def timelapse(
         help="Desired FPS of the output video file",
     ),
 ):
-    output_file = api.create_timelapse(
-        input_video=input_file,
-        step=step,
-        input_fps=input_fps,
-        output_fps=output_fps,
-    )
+    with _handle_errors():
+        output_file = api.create_timelapse(
+            input_video=input_file,
+            step=step,
+            input_fps=input_fps,
+            output_fps=output_fps,
+        )
     typer.secho(
         f"Created file: {output_file}",
         fg=typer.colors.GREEN,
     )
+
+
+@app.command(name="to-mp4")
+def to_mp4(
+    input_file: str = typer.Option(
+        ...,
+        "--input-file",
+        "-i",
+    ),
+):
+    with _handle_errors():
+        output_file = api.to_mp4(input_file)
+    typer.secho(f"Created file: {output_file}", fg=typer.colors.GREEN)
 
 
 @app.command(help="Hello, world!")
