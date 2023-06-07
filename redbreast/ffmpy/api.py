@@ -5,7 +5,7 @@ import shlex
 
 def create_timelapse(
     input_video: str,  # absolute path to the input video
-    N,  # every Nth frame will be sampled from the input video
+    step,  # every step-th frame will be sampled from the input video
     input_fps,  # FPS of the input video
     output_fps=60,  # FPS of the output video
 ) -> str:
@@ -23,7 +23,7 @@ def create_timelapse(
         f"ffmpeg"
         f" -an"  # ignore input file audio
         f" -i {input_video.as_posix()}"
-        f" -vf framestep={N},"  # sample the input video every 'framestep' frames
+        f" -vf framestep={step},"  # sample the input video every 'framestep' frames
         f"setpts=N/{input_fps}/TB"  # space the frames at the INPUT video FPS
         f" -r {output_fps}"  # specify output video FPS again?
         f" -y"  # force overwrite
