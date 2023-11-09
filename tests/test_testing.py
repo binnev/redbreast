@@ -1,28 +1,160 @@
+from unittest.mock import patch
+
 import pytest
 
-from redbreast.testing import parametrize, testparams, assert_dicts_equal, set_difference
+import redbreast
+from redbreast.testing import (
+    assert_dicts_equal,
+    set_difference,
+)
 
 
-@parametrize(
-    param := testparams("a", "b", "c"),  # here we define the parameter names by creating a class
+@pytest.mark.parametrize(
+    "argnames_format",
     [
-        # here we create instances to hold the actual values.
-        # keyword arguments are mandatory
-        param(description="passing only description"),
-        param(description="passing only a", a=1),
-        param(description="passing only b", b=2),
-        param(description="passing b and c", b=2, c=3),
-        param(description="all kwargs passed", a=1, b=2, c=3),
-        param(a=1, b=2, c=3, description="kwargs in different order"),
-        param(a=1, b=2, c=3),  # pycharm won't give this a label because it has no description
+        "a, b",
+        "a,b",
+        ["a", "b"],
     ],
 )
-def test_custom_parametrize(param):
-    # parameters can be accessed by dot notation because param is a DataClass :)
-    assert param.a in [1, None]
-    assert param.b in [2, None]
-    assert param.c in [3, None]
-    assert type(param.description) in [str, type(None)]
+def test_parametrize_handles_different_argnames_formats(argnames_format):
+    input_params = [
+        redbreast.param(id="first", a=1, b=2),
+        redbreast.param(id="second", a=3, b=4),
+    ]
+    expected_pytest_params = [
+        pytest.param(1, 2, id="first"),
+        pytest.param(3, 4, id="second"),
+    ]
+    with patch("redbreast.testing.pytest.mark.parametrize", return_value="boo") as mock:
+        assert redbreast.parametrize(argnames_format, input_params) == "boo"
+        mock.assert_called_with(["a", "b"], expected_pytest_params)
+
+
+@pytest.mark.parametrize(
+    "input_param, expected_error_msg",
+    [
+        (
+            redbreast.param(),
+            "Param with id=None is missing these kwargs: ['a', 'b']",
+        ),
+        (
+            redbreast.param(a=1),
+            "Param with id=None is missing these kwargs: ['b']",
+        ),
+        (
+            redbreast.param(id=None, a=1),
+            "Param with id=None is missing these kwargs: ['b']",
+        ),
+        (
+            redbreast.param(id="first", a=1),
+            "Param with id='first' is missing these kwargs: ['b']",
+        ),
+        (
+            redbreast.param(id="second"),
+            "Param with id='second' is missing these kwargs: ['a', 'b']",
+        ),
+        (
+            redbreast.param(id="third", a=1, b=2, c=3),
+            "Param with id='third' received unexpected kwargs: ['c']",
+        ),
+        (
+            redbreast.param(id="fourth", a=1, b=2, c=3, d=4),
+            "Param with id='fourth' received unexpected kwargs: ['c', 'd']",
+        ),
+    ],
+)
+def test_parametrize_catches_missing_or_extra_kwargs(input_param, expected_error_msg):
+    with pytest.raises(TypeError) as e:
+        redbreast.parametrize("a, b", [input_param])
+
+    assert str(e.value) == expected_error_msg
+
+
+@redbreast.parametrize(
+    "one, two",
+    [
+        redbreast.param(
+            id="in order, with id first",
+            one=1,
+            two=2,
+        ),
+        redbreast.param(
+            one=1,
+            two=2,
+            id="in order, with id last",
+        ),
+        redbreast.param(
+            two=2,
+            one=1,
+            id="wrong order",
+        ),
+        redbreast.param(
+            two=2,
+            one=1,
+        ),  # no label
+    ],
+)
+def test_parametrize_kwargs_order_doesnt_matter(one, two):
+    assert one == 1
+    assert two == 2
+
+
+@redbreast.parametrize(
+    "a, b, c, d, e, f",
+    [
+        redbreast.param(
+            id="first",
+            a=True,
+            b="b",
+            c=1,
+            d=4.20,
+            e={69, 420},
+            f=["foo" "bar"],
+        ),
+        redbreast.param(
+            id="second",
+            a=False,
+            b="argh",
+            c=420,
+            d=6.9,
+            e={999, 666},
+            f=["baz"],
+        ),
+        redbreast.param(
+            id="third",
+            a=True,
+            b="arghhhhhh",
+            c=9000,
+            d=420.69,
+            e={8, 9},
+            f=["rrrr"],
+        ),
+        redbreast.param(
+            id="all falsy",
+            a=False,
+            b="",
+            c=0,
+            d=0.0,
+            e=set(),
+            f=[],
+        ),
+    ],
+)
+def test_parametrize_demo_usage(
+    a: bool,
+    b: str,
+    c: int,
+    d: float,
+    e: set[int],
+    f: list[str],
+):
+    assert isinstance(a, bool)
+    assert isinstance(b, str)
+    assert isinstance(c, int)
+    assert isinstance(d, float)
+    assert isinstance(e, set)
+    assert isinstance(f, list)
 
 
 @pytest.mark.parametrize(
