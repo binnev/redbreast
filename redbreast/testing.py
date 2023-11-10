@@ -1,7 +1,8 @@
 """Utility stuff for use in tests"""
+
 import operator
-from dataclasses import make_dataclass
-from typing import Any, Optional, Protocol
+import re
+from typing import Optional, Protocol, Sequence
 
 import pytest
 
@@ -15,24 +16,54 @@ class TestParams(Protocol):
         ...
 
 
-def parametrize(param_class: TestParams, values_list, *args, **kwargs):
-    """Thin wrapper around pytest.mark.parametrize, which helps enforce keyword
-    arguments in the parameters"""
-    # the `id` field is what pycharm displays as the description for each individual test case.
-    # Pytest usually auto-generates these (badly)
-    values_list = [pytest.param(value, id=value.description) for value in values_list]
-    return pytest.mark.parametrize("param", values_list, *args, **kwargs)
+class param:
+    """
+    Shadows pytest.param, but the values go in the **kwargs, not the *args.
+    """
+
+    def __init__(
+        self,
+        *,  # force kwargs
+        marks: tuple = (),
+        id: Optional[str] = None,
+        **kwargs,
+    ):
+        self.marks = marks
+        self.id = id
+        self.kwargs = kwargs
 
 
-def testparams(*field_names) -> type[TestParams]:
-    """Generates a dataclass to hold the given test parameters. The `description` field is always
-    included, so we don't have to define it every time we write a test. Keyword arguments are
-    enforced for readability. Typing is set to Optional[Any] for all fields, to keep the syntax
-    as simple as possible (and anyway, PyCharm doesn't pick up any type hints from this generated
-    class)."""
-    field_names = field_names + ("description",)
-    fields = [(name, Optional[Any], None) for name in field_names]
-    return make_dataclass(cls_name="testparams", fields=fields)
+def parametrize(argnames: str | Sequence[str], params: Sequence[param], **kwargs):
+    """
+    Wraps pytest.mark.parametrize.
+    Unpacks the redbreast.params into pytest.params with positional arguments.
+    """
+
+    # convert argnames to a list of strings.
+    # This dictates the order in which the values should appear.
+    if isinstance(argnames, str):
+        argnames = re.split(", |,", argnames)  # match comma+space and comma
+    else:
+        argnames = list(argnames)
+
+    # convert the list of redbreast.params into pytest.params
+    argvalues = []
+    for p in params:
+        # check the param.kwargs exactly match the required argnames
+        expected_args = set(argnames)
+        passed_kwargs = set(p.kwargs.keys())
+        if missing := expected_args.difference(passed_kwargs):
+            raise TypeError(f"Param with id={p.id!r} is missing these kwargs: {sorted(missing)}")
+        if unexpected := passed_kwargs.difference(expected_args):
+            raise TypeError(
+                f"Param with id={p.id!r} received unexpected kwargs: {sorted(unexpected)}"
+            )
+
+        # Get the positional args in the correct order (matching the order of argnames)
+        values = [p.kwargs.get(n) for n in argnames]
+        arg_value = pytest.param(*values, marks=p.marks, id=p.id)
+        argvalues.append(arg_value)
+    return pytest.mark.parametrize(argnames, argvalues, **kwargs)
 
 
 def set_difference(a, b):

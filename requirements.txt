@@ -1,6 +1,7 @@
 # core
 django>=3.2
 typing>=3.7
+typer
 
 # testing and development
 black>=22.3.0
