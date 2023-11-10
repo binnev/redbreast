@@ -4,8 +4,8 @@ from dataclasses import dataclass
 import pytest
 from django.core.exceptions import ObjectDoesNotExist, MultipleObjectsReturned
 
+import redbreast
 from redbreast.querylist import QueryList
-from redbreast.testing import parametrize, testparams
 
 
 @dataclass
@@ -101,43 +101,43 @@ def test_unknown_dunder_operation_raises_exception():
     assert str(e.value) == "'str' object has no attribute 'inside'"
 
 
-@parametrize(
-    param := testparams("filter_kwargs", "expected_match"),
+@redbreast.parametrize(
+    "filter_kwargs, expected_match",
     [
-        param(
-            description="single normal kwarg match",
+        redbreast.param(
+            id="single normal kwarg match",
             filter_kwargs=dict(name="Fido"),
             expected_match=True,
         ),
-        param(
-            description="single normal kwarg no match",
+        redbreast.param(
+            id="single normal kwarg no match",
             filter_kwargs=dict(name="London Paddington"),
             expected_match=False,
         ),
-        param(
-            description="two normal kwargs",
+        redbreast.param(
+            id="two normal kwargs",
             filter_kwargs=dict(name="Fido", number=15.72),
             expected_match=True,
         ),
-        param(
-            description="two normal kwargs no match",
+        redbreast.param(
+            id="two normal kwargs no match",
             filter_kwargs=dict(name="Fido", number=420),
             expected_match=False,
         ),
-        param(
-            description="mix of normal and dunder kwargs",
+        redbreast.param(
+            id="mix of normal and dunder kwargs",
             filter_kwargs=dict(name="Fido", number__gte=10),
             expected_match=True,
         ),
-        param(
-            description="lots of dunder kwargs",
+        redbreast.param(
+            id="lots of dunder kwargs",
             filter_kwargs=dict(number__gt=15, number__gte=15.72, number__lt=16, number__lte=15.72),
             expected_match=True,
         ),
     ],
 )
-def test__match_item(param):
-    assert QueryList._match_item(fido, **param.filter_kwargs) == param.expected_match
+def test__match_item(filter_kwargs, expected_match):
+    assert QueryList._match_item(fido, **filter_kwargs) == expected_match
 
 
 @pytest.mark.parametrize(
@@ -203,84 +203,82 @@ def test_attribute_getters(query, expected_value):
     assert QueryList._recursive_get_attribute(item, query) == expected_value
 
 
-@parametrize(
-    param := testparams("apply_filter", "expected_result"),
+@redbreast.parametrize(
+    "apply_filter, expected_result",
     [
-        param(
-            description="single filter",
+        redbreast.param(
+            id="single filter",
             apply_filter=lambda qs: qs.filter(owner="Sam"),
             expected_result=[fido, biko],
         ),
-        param(
-            description="filter with multiple kwargs",
+        redbreast.param(
+            id="filter with multiple kwargs",
             apply_filter=lambda qs: qs.filter(owner="Sam", number__lt=40),
             expected_result=[fido],
         ),
-        param(
-            description="multiple filters in series",
+        redbreast.param(
+            id="multiple filters in series",
             apply_filter=lambda qs: qs.filter(owner="Sam").filter(number__lt=40),
             expected_result=[fido],
         ),
-        param(
-            description="if no items match filter we get an empty object",
+        redbreast.param(
+            id="if no items match filter we get an empty object",
             apply_filter=lambda qs: qs.filter(owner="foo"),
             expected_result=[],
         ),
-        param(
-            description="single exclude",
+        redbreast.param(
+            id="single exclude",
             apply_filter=lambda qs: qs.exclude(name="Fido"),
             expected_result=[muttley, biko, buster],
         ),
-        param(
-            description=(
-                "multiple argument exclude should only exclude members for which *all* args match"
-            ),
+        redbreast.param(
+            id=("multiple argument exclude should only exclude members for which *all* args match"),
             apply_filter=lambda qs: qs.exclude(name="Fido", owner="Sam"),
             expected_result=[muttley, biko, buster],
         ),
-        param(
-            description="exclude in series can be used for 'any' type behaviour",
+        redbreast.param(
+            id="exclude in series can be used for 'any' type behaviour",
             apply_filter=(lambda qs: qs.exclude(name="Fido").exclude(owner="Sam")),
             expected_result=[muttley, buster],
         ),
-        param(
-            description="fancy filtering __lt",
+        redbreast.param(
+            id="fancy filtering __lt",
             apply_filter=lambda qs: qs.filter(number__lt=20),
             expected_result=[fido],
         ),
-        param(
-            description="fancy filtering __gt",
+        redbreast.param(
+            id="fancy filtering __gt",
             apply_filter=lambda qs: qs.filter(number__gt=20),
             expected_result=[muttley, biko, buster],
         ),
-        param(
-            description="fancy filtering multiple __kwargs",
+        redbreast.param(
+            id="fancy filtering multiple __kwargs",
             apply_filter=lambda qs: qs.filter(number__gt=20, number__lte=60),
             expected_result=[muttley, biko],
         ),
-        param(
-            description="attribute getter in query",
+        redbreast.param(
+            id="attribute getter in query",
             apply_filter=lambda qs: qs.filter(name__len=4),
             expected_result=[fido, biko],
         ),
-        param(
-            description="attribute getter and dunder operation in query",
+        redbreast.param(
+            id="attribute getter and dunder operation in query",
             apply_filter=lambda qs: qs.filter(name__len__lte=6),
             expected_result=[fido, biko, buster],
         ),
-        param(
-            description="attribute getter and dunder operation in query; also a normal field",
+        redbreast.param(
+            id="attribute getter and dunder operation in query; also a normal field",
             apply_filter=lambda qs: qs.filter(name__len__lte=6, owner="Robin"),
             expected_result=[buster],
         ),
     ],
 )
-def test_filter_and_exclude(param):
+def test_filter_and_exclude(apply_filter, expected_result):
     qs = _default()
 
-    result = param.apply_filter(qs)
+    result = apply_filter(qs)
     assert isinstance(result, QueryList)
-    assert result == param.expected_result
+    assert result == expected_result
 
 
 def test_filter_for_nonexistent_attribute_raises_error():
@@ -369,11 +367,11 @@ def test_register_operation_and_attribute_getter():
     assert "num_fs" not in dict(QueryList.attribute_getters)
 
 
-@parametrize(
-    param := testparams("order_by", "expected_result"),
+@redbreast.parametrize(
+    "order_by, expected_result",
     [
-        param(
-            description="single numeric field",
+        redbreast.param(
+            id="single numeric field",
             order_by=["number"],
             expected_result=[
                 fido,
@@ -382,8 +380,8 @@ def test_register_operation_and_attribute_getter():
                 buster,
             ],
         ),
-        param(
-            description="single numeric field reversed",
+        redbreast.param(
+            id="single numeric field reversed",
             order_by=["-number"],
             expected_result=[
                 buster,
@@ -392,8 +390,8 @@ def test_register_operation_and_attribute_getter():
                 fido,
             ],
         ),
-        param(
-            description="single str field",
+        redbreast.param(
+            id="single str field",
             order_by=["name"],
             expected_result=[
                 biko,
@@ -402,8 +400,8 @@ def test_register_operation_and_attribute_getter():
                 muttley,
             ],
         ),
-        param(
-            description="single str field reversed",
+        redbreast.param(
+            id="single str field reversed",
             order_by=["-name"],
             expected_result=[
                 muttley,
@@ -412,8 +410,8 @@ def test_register_operation_and_attribute_getter():
                 biko,
             ],
         ),
-        param(
-            description="multiple str fields",
+        redbreast.param(
+            id="multiple str fields",
             order_by=["owner", "name"],
             expected_result=[
                 buster,
@@ -422,8 +420,8 @@ def test_register_operation_and_attribute_getter():
                 fido,
             ],
         ),
-        param(
-            description="multiple str and numeric fields",
+        redbreast.param(
+            id="multiple str and numeric fields",
             order_by=["owner", "number"],
             expected_result=[
                 muttley,
@@ -432,8 +430,8 @@ def test_register_operation_and_attribute_getter():
                 biko,
             ],
         ),
-        param(
-            description="multiple str and numeric fields, one reversed",
+        redbreast.param(
+            id="multiple str and numeric fields, one reversed",
             order_by=["-owner", "number"],
             expected_result=[
                 fido,
@@ -442,8 +440,8 @@ def test_register_operation_and_attribute_getter():
                 buster,
             ],
         ),
-        param(
-            description="multiple str and numeric fields, both reversed",
+        redbreast.param(
+            id="multiple str and numeric fields, both reversed",
             order_by=["-owner", "-number"],
             expected_result=[
                 biko,
@@ -452,8 +450,8 @@ def test_register_operation_and_attribute_getter():
                 muttley,
             ],
         ),
-        param(
-            description="multiple str fields, both reversed",
+        redbreast.param(
+            id="multiple str fields, both reversed",
             order_by=["-owner", "-name"],
             expected_result=[
                 fido,
@@ -462,8 +460,8 @@ def test_register_operation_and_attribute_getter():
                 buster,
             ],
         ),
-        param(
-            description="single field with attribute getter behind '__'",
+        redbreast.param(
+            id="single field with attribute getter behind '__'",
             order_by=["name__len"],
             expected_result=[
                 fido,
@@ -472,8 +470,8 @@ def test_register_operation_and_attribute_getter():
                 muttley,
             ],
         ),
-        param(
-            description="single field with attribute getter behind '__', reversed",
+        redbreast.param(
+            id="single field with attribute getter behind '__', reversed",
             order_by=["-name__len"],
             expected_result=[
                 muttley,
@@ -482,8 +480,8 @@ def test_register_operation_and_attribute_getter():
                 biko,
             ],
         ),
-        param(
-            description="multiple fields, one with attribute getter behind '__', one reversed",
+        redbreast.param(
+            id="multiple fields, one with attribute getter behind '__', one reversed",
             order_by=["-name__len", "-number"],
             expected_result=[
                 muttley,
@@ -494,10 +492,10 @@ def test_register_operation_and_attribute_getter():
         ),
     ],
 )
-def test_order_by(param):
+def test_order_by(order_by, expected_result):
     dogs = _default()
-    results = dogs.order_by(*param.order_by)
-    assert results == param.expected_result
+    results = dogs.order_by(*order_by)
+    assert results == expected_result
     assert isinstance(results, QueryList)
 
 
