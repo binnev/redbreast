@@ -53,9 +53,7 @@ def parametrize(argnames: str | Sequence[str], params: Sequence[param], **kwargs
         expected_args = set(argnames)
         passed_kwargs = set(p.kwargs.keys())
         if missing := expected_args.difference(passed_kwargs):
-            raise TypeError(
-                f"Param with id={p.id!r} is missing these kwargs: {sorted(missing)}"
-            )
+            raise TypeError(f"Param with id={p.id!r} is missing these kwargs: {sorted(missing)}")
         if unexpected := passed_kwargs.difference(expected_args):
             raise TypeError(
                 f"Param with id={p.id!r} received unexpected kwargs: {sorted(unexpected)}"
@@ -95,9 +93,7 @@ def assert_dicts_equal(a: dict, b: dict):
         return
 
     keys_diff = set_difference(a.keys(), b.keys())
-    assert (
-        not keys_diff
-    ), f"These keys are not present in both dictionaries: {sorted(keys_diff)}"
+    assert not keys_diff, f"These keys are not present in both dictionaries: {sorted(keys_diff)}"
     for key, a_value in a.items():
         b_value = b[key]
         if isinstance(a_value, dict) and isinstance(b_value, dict):
