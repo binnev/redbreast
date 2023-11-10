@@ -27,7 +27,7 @@ jobs:
           pip install -r requirements.txt
       - name: Check formatting with Black
         run: |
-          black --check --diff --line-length 100 .
+          black --check --diff .
       - name: Test with pytest
         run: |
           pytest
