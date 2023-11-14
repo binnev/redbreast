@@ -2,34 +2,27 @@
 
 import operator
 import re
-from typing import Optional, Protocol, Sequence
+from typing import Sequence
 
 import pytest
-
-
-class TestParams(Protocol):
-    """This is to help static type checkers detect the always-present "description" kwarg."""
-
-    description: Optional[str]
-
-    def __init__(self, *, description: str, **kwargs) -> None:
-        ...
 
 
 class param:
     """
     Shadows pytest.param, but the values go in the **kwargs, not the *args.
+    Also, it is mandatory to pass a description as the only positional argument
+    (this is passed as pytest.param's `id`)
     """
 
     def __init__(
         self,
-        *,  # force kwargs
+        description: str,
+        *,
         marks: tuple = (),
-        id: Optional[str] = None,
         **kwargs,
     ):
         self.marks = marks
-        self.id = id
+        self.id = description
         self.kwargs = kwargs
 
 

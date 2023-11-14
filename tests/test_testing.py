@@ -9,6 +9,16 @@ from redbreast.testing import (
 )
 
 
+def test_param_incorrect_usages():
+    with pytest.raises(TypeError) as e:
+        redbreast.param()
+    assert str(e.value) == "param.__init__() missing 1 required positional argument: 'description'"
+
+    with pytest.raises(TypeError) as e:
+        redbreast.param("description", True, 420, "help")
+    assert str(e.value) == "param.__init__() takes 2 positional arguments but 5 were given"
+
+
 @pytest.mark.parametrize(
     "argnames_format",
     [
@@ -19,8 +29,8 @@ from redbreast.testing import (
 )
 def test_parametrize_handles_different_argnames_formats(argnames_format):
     input_params = [
-        redbreast.param(id="first", a=1, b=2),
-        redbreast.param(id="second", a=3, b=4),
+        redbreast.param("first", a=1, b=2),
+        redbreast.param("second", a=3, b=4),
     ]
     expected_pytest_params = [
         pytest.param(1, 2, id="first"),
@@ -35,31 +45,31 @@ def test_parametrize_handles_different_argnames_formats(argnames_format):
     "input_param, expected_error_msg",
     [
         (
-            redbreast.param(),
-            "Param with id=None is missing these kwargs: ['a', 'b']",
+            redbreast.param("description"),
+            "Param with id='description' is missing these kwargs: ['a', 'b']",
         ),
         (
-            redbreast.param(a=1),
-            "Param with id=None is missing these kwargs: ['b']",
+            redbreast.param("description", a=1),
+            "Param with id='description' is missing these kwargs: ['b']",
         ),
         (
-            redbreast.param(id=None, a=1),
-            "Param with id=None is missing these kwargs: ['b']",
+            redbreast.param("description", id=None, a=1),
+            "Param with id='description' is missing these kwargs: ['b']",
         ),
         (
-            redbreast.param(id="first", a=1),
+            redbreast.param("first", a=1),
             "Param with id='first' is missing these kwargs: ['b']",
         ),
         (
-            redbreast.param(id="second"),
+            redbreast.param("second"),
             "Param with id='second' is missing these kwargs: ['a', 'b']",
         ),
         (
-            redbreast.param(id="third", a=1, b=2, c=3),
+            redbreast.param("third", a=1, b=2, c=3),
             "Param with id='third' received unexpected kwargs: ['c']",
         ),
         (
-            redbreast.param(id="fourth", a=1, b=2, c=3, d=4),
+            redbreast.param("fourth", a=1, b=2, c=3, d=4),
             "Param with id='fourth' received unexpected kwargs: ['c', 'd']",
         ),
     ],
@@ -75,24 +85,20 @@ def test_parametrize_catches_missing_or_extra_kwargs(input_param, expected_error
     "one, two",
     [
         redbreast.param(
-            id="in order, with id first",
+            "in order, with id first",
             one=1,
             two=2,
         ),
         redbreast.param(
+            "in order, with id last",
             one=1,
             two=2,
-            id="in order, with id last",
         ),
         redbreast.param(
+            "wrong order",
             two=2,
             one=1,
-            id="wrong order",
         ),
-        redbreast.param(
-            two=2,
-            one=1,
-        ),  # no label
     ],
 )
 def test_parametrize_kwargs_order_doesnt_matter(one, two):
@@ -101,60 +107,129 @@ def test_parametrize_kwargs_order_doesnt_matter(one, two):
 
 
 @redbreast.parametrize(
-    "a, b, c, d, e, f",
+    "are_planets_aligned, is_today_friday, name, request_count, cost, related_ids, handy_strings",
     [
         redbreast.param(
-            id="first",
-            a=True,
-            b="b",
-            c=1,
-            d=4.20,
-            e={69, 420},
-            f=["foo" "bar"],
+            "first",
+            are_planets_aligned=True,
+            is_today_friday=True,
+            name="b",
+            request_count=1,
+            cost=4.20,
+            related_ids={69, 420},
+            handy_strings=["foo" "bar"],
         ),
         redbreast.param(
-            id="second",
-            a=False,
-            b="argh",
-            c=420,
-            d=6.9,
-            e={999, 666},
-            f=["baz"],
+            "second",
+            are_planets_aligned=False,
+            is_today_friday=True,
+            name="argh",
+            request_count=420,
+            cost=6.9,
+            related_ids={999, 666},
+            handy_strings=["baz"],
         ),
         redbreast.param(
-            id="third",
-            a=True,
-            b="arghhhhhh",
-            c=9000,
-            d=420.69,
-            e={8, 9},
-            f=["rrrr"],
+            "third",
+            are_planets_aligned=True,
+            is_today_friday=False,
+            name="arghhhhhh",
+            request_count=9000,
+            cost=420.69,
+            related_ids={8, 9},
+            handy_strings=["rrrr"],
         ),
         redbreast.param(
-            id="all falsy",
-            a=False,
-            b="",
-            c=0,
-            d=0.0,
-            e=set(),
-            f=[],
+            "all falsy",
+            are_planets_aligned=False,
+            is_today_friday=False,
+            name="",
+            request_count=0,
+            cost=0.0,
+            related_ids=set(),
+            handy_strings=[],
         ),
     ],
 )
 def test_parametrize_demo_usage(
-    a: bool,
-    b: str,
-    c: int,
-    d: float,
-    e: set[int],
-    f: list[str],
+    are_planets_aligned: bool,
+    is_today_friday: bool,
+    name: str,
+    request_count: int,
+    cost: float,
+    related_ids: set[int],
+    handy_strings: list[str],
 ):
-    assert isinstance(a, bool)
-    assert isinstance(b, str)
-    assert isinstance(c, int)
-    assert isinstance(d, float)
-    assert isinstance(e, set)
-    assert isinstance(f, list)
+    assert isinstance(are_planets_aligned, bool)
+    assert isinstance(is_today_friday, bool)
+    assert isinstance(name, str)
+    assert isinstance(request_count, int)
+    assert isinstance(cost, float)
+    assert isinstance(related_ids, set)
+    assert isinstance(handy_strings, list)
+
+
+@pytest.mark.parametrize(
+    "are_planets_aligned, is_today_friday, name, request_count, cost, related_ids, handy_strings",
+    [
+        pytest.param(
+            True,
+            True,
+            "b",
+            1,
+            4.20,
+            {69, 420},
+            ["foo" "bar"],
+            id="first",
+        ),
+        pytest.param(
+            False,
+            True,
+            "argh",
+            420,
+            6.9,
+            {999, 666},
+            ["baz"],
+            id="second",
+        ),
+        pytest.param(
+            True,
+            False,
+            "arghhhhhh",
+            9000,
+            420.69,
+            {8, 9},
+            ["rrrr"],
+            id="third",
+        ),
+        pytest.param(
+            False,
+            False,
+            "",
+            0,
+            0.0,
+            set(),
+            [],
+            id="all falsy",
+        ),
+    ],
+)
+def test_classic_pytest_parametrize_demo_usage(
+    are_planets_aligned: bool,
+    is_today_friday: bool,
+    name: str,
+    request_count: int,
+    cost: float,
+    related_ids: set[int],
+    handy_strings: list[str],
+):
+    assert isinstance(are_planets_aligned, bool)
+    assert isinstance(is_today_friday, bool)
+    assert isinstance(name, str)
+    assert isinstance(request_count, int)
+    assert isinstance(cost, float)
+    assert isinstance(related_ids, set)
+    assert isinstance(handy_strings, list)
 
 
 @pytest.mark.parametrize(
