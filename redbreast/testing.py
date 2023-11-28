@@ -9,9 +9,9 @@ import pytest
 
 class param:
     """
-    Shadows pytest.param, but the values go in the **kwargs, not the *args.
-    Also, it is mandatory to pass a description as the only positional argument
-    (this is passed as pytest.param's `id`)
+    Shadows pytest.param, but forces you to pass values as **kwargs, *args, for better readability.
+    Also, it is mandatory to pass a description. You can pass it as the only positional argument, or as a kwarg.
+    (description serves the same function as pytest.param's `id` field)
     """
 
     def __init__(
@@ -25,37 +25,50 @@ class param:
         self.id = description
         self.kwargs = kwargs
 
+    def _check_argnames_exactly_match(self, argnames: list[str]) -> None:
+        """
+        Check the param.kwargs exactly match the required argnames.
+        This prevents you forgetting one of the values (or adding an extra, undeclared one).
+        """
+        expected_args = set(argnames)
+        passed_kwargs = set(self.kwargs.keys())
+        if missing := expected_args.difference(passed_kwargs):
+            raise TypeError(f"Param with id={self.id!r} is missing these kwargs: {sorted(missing)}")
+        if unexpected := passed_kwargs.difference(expected_args):
+            raise TypeError(
+                f"Param with id={self.id!r} received unexpected kwargs: {sorted(unexpected)}"
+            )
 
-def parametrize(argnames: str | Sequence[str], params: Sequence[param], **kwargs):
+    def to_pytest_param(self, argnames: list[str]) -> pytest.param:
+        """
+        Convert to a pytest.param with positional args in the correct order
+        (matching the order of argnames).
+        """
+        self._check_argnames_exactly_match(argnames)
+        values = (self.kwargs.get(n) for n in argnames)
+        return pytest.param(*values, marks=self.marks, id=self.id)
+
+
+def parametrize(
+    argnames: str | Sequence[str],
+    params: Sequence[param],
+    **kwargs,
+) -> pytest.mark.parametrize:
     """
     Wraps pytest.mark.parametrize.
-    Unpacks the redbreast.params into pytest.params with positional arguments.
+    Unpacks the params into pytest.params with positional arguments.
     """
 
-    # convert argnames to a list of strings.
+    # Convert argnames to a list of strings.
     # This dictates the order in which the values should appear.
+    # (This is important, because they're stored in a dict and not necessarily ordered the same way)
     if isinstance(argnames, str):
         argnames = re.split(", |,", argnames)  # match comma+space and comma
     else:
         argnames = list(argnames)
 
-    # convert the list of redbreast.params into pytest.params
-    argvalues = []
-    for p in params:
-        # check the param.kwargs exactly match the required argnames
-        expected_args = set(argnames)
-        passed_kwargs = set(p.kwargs.keys())
-        if missing := expected_args.difference(passed_kwargs):
-            raise TypeError(f"Param with id={p.id!r} is missing these kwargs: {sorted(missing)}")
-        if unexpected := passed_kwargs.difference(expected_args):
-            raise TypeError(
-                f"Param with id={p.id!r} received unexpected kwargs: {sorted(unexpected)}"
-            )
-
-        # Get the positional args in the correct order (matching the order of argnames)
-        values = [p.kwargs.get(n) for n in argnames]
-        arg_value = pytest.param(*values, marks=p.marks, id=p.id)
-        argvalues.append(arg_value)
+    # Convert the list of params into pytest.params
+    argvalues = [p.to_pytest_param(argnames) for p in params]
     return pytest.mark.parametrize(argnames, argvalues, **kwargs)
 
 
